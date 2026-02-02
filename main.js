@@ -83,7 +83,7 @@ function initializeApp() {
     // Set up room update handler
     window.handleRoomUpdate = (roomData) => {
         updateLobbyDisplay(roomData);
-        
+
         // Check if game started
         if (roomData.currentGame && roomData.currentGame !== window.currentGameName) {
             window.currentGameName = roomData.currentGame;
@@ -94,13 +94,33 @@ function initializeApp() {
             showLobby();
         }
     };
+
+    // Handle session restoration after page refresh
+    window.handleSessionRestore = async () => {
+        console.log('Session restored, updating UI...');
+        const roomData = await window.gameState.getRoomData();
+        if (roomData) {
+            // Hide home screen, show appropriate screen
+            document.getElementById('home-screen').classList.remove('active');
+
+            if (roomData.currentGame) {
+                // Game is in progress, load it
+                window.currentGameName = roomData.currentGame;
+                loadGame(roomData.currentGame, roomData.gameData);
+            } else {
+                // Show lobby
+                document.getElementById('lobby-screen').classList.add('active');
+                updateLobbyDisplay(roomData);
+            }
+        }
+    };
 }
 
 function showHome() {
     document.getElementById('home-screen').classList.add('active');
     document.getElementById('lobby-screen').classList.remove('active');
     document.getElementById('game-container').innerHTML = '';
-    
+
     // Clear forms
     document.getElementById('host-name-input').value = '';
     document.getElementById('room-code-input').value = '';
@@ -112,7 +132,7 @@ function showHome() {
 async function showLobby() {
     document.getElementById('home-screen').classList.remove('active');
     document.getElementById('lobby-screen').classList.add('active');
-    
+
     const roomData = await window.gameState.getRoomData();
     if (roomData) {
         updateLobbyDisplay(roomData);
@@ -122,14 +142,14 @@ async function showLobby() {
 function updateLobbyDisplay(roomData) {
     // Update room code
     document.getElementById('lobby-room-code').textContent = roomData.code;
-    
+
     // Update player count
     document.getElementById('player-count').textContent = roomData.players.length;
-    
+
     // Update players list
     const playersContainer = document.getElementById('players-container');
     playersContainer.innerHTML = '';
-    
+
     roomData.players.forEach(player => {
         const chip = document.createElement('div');
         chip.className = 'player-chip';
@@ -144,7 +164,7 @@ function updateLobbyDisplay(roomData) {
 async function startGame(gameName) {
     const roomData = await window.gameState.getRoomData();
     const playerCount = roomData.players.length;
-    
+
     // Check player count requirements
     const requirements = {
         'guess-commenter': { min: 3, max: 10 },
@@ -155,7 +175,7 @@ async function startGame(gameName) {
         'alibi': { min: 4, max: 8 },
         'quick-draw': { min: 4, max: 10 }
     };
-    
+
     const req = requirements[gameName];
     if (playerCount < req.min) {
         alert(`This game requires at least ${req.min} players`);
@@ -165,11 +185,11 @@ async function startGame(gameName) {
         alert(`This game supports maximum ${req.max} players`);
         return;
     }
-    
+
     // Initialize game-specific data
     let initialGameData = {};
-    
-    switch(gameName) {
+
+    switch (gameName) {
         case 'guess-commenter':
             initialGameData = { phase: 'submit', responses: [] };
             break;
@@ -192,18 +212,18 @@ async function startGame(gameName) {
             initialGameData = { phase: 'start', chain: [], round: 1 };
             break;
     }
-    
+
     await window.gameState.startGame(gameName, initialGameData);
 }
 
 function loadGame(gameName, gameData) {
     document.getElementById('lobby-screen').classList.remove('active');
-    
+
     const container = document.getElementById('game-container');
     container.innerHTML = '';
-    
+
     // Load the appropriate game
-    switch(gameName) {
+    switch (gameName) {
         case 'guess-commenter':
             window.guessCommenterGame.init(container, gameData);
             break;

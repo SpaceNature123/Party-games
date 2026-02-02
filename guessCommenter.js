@@ -48,7 +48,7 @@ window.guessCommenterGame = {
 
     async updateDisplay(gameData) {
         const content = document.getElementById('game-content');
-        
+
         if (gameData.phase === 'submit') {
             await this.showSubmitPhase(content, gameData);
         } else if (gameData.phase === 'guess') {
@@ -107,7 +107,7 @@ window.guessCommenterGame = {
                     return;
                 }
 
-                await window.gameState.submitPlayerAction('response', { 
+                await window.gameState.submitPlayerAction('response', {
                     text: response,
                     prompt: this.currentPrompt
                 });
@@ -238,9 +238,11 @@ window.guessCommenterGame = {
         }
     },
 
-    showResultsPhase(content, gameData) {
+    async showResultsPhase(content, gameData) {
         const scores = gameData.scores || {};
         const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+        const roomData = await window.gameState.getRoomData();
+        const players = roomData?.players || [];
 
         content.innerHTML = `
             <div class="text-center">
@@ -250,9 +252,9 @@ window.guessCommenterGame = {
 
                 <div style="max-width: 600px; margin: 0 auto;">
                     ${sortedScores.map(([playerId, score], index) => {
-                        const player = this.getPlayerById(playerId);
-                        const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
-                        return `
+            const player = players.find(p => p.id === playerId);
+            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+            return `
                             <div style="display: flex; justify-content: space-between; align-items: center; 
                                         padding: 1rem 1.5rem; background: var(--dark); border-radius: 12px; 
                                         margin-bottom: 1rem; border: 2px solid ${index === 0 ? 'var(--accent)' : 'transparent'};">
@@ -262,7 +264,7 @@ window.guessCommenterGame = {
                                 </span>
                             </div>
                         `;
-                    }).join('')}
+        }).join('')}
                 </div>
 
                 ${window.gameState.isHost ? `
@@ -288,8 +290,11 @@ window.guessCommenterGame = {
         }
     },
 
-    getPlayerById(playerId) {
-        // This would need to fetch from room data
-        return { name: 'Player' };
+    async getPlayerById(playerId) {
+        const roomData = await window.gameState.getRoomData();
+        if (roomData && roomData.players) {
+            return roomData.players.find(p => p.id === playerId) || { name: 'Unknown' };
+        }
+        return { name: 'Unknown' };
     }
 };

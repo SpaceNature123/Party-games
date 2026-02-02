@@ -6,11 +6,89 @@ class GameState {
         this.isHost = false;
         this.db = null;
         this.roomRef = null;
+        this.isReconnecting = false;
         // Wait for Firebase to load before initializing
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.initFirebase());
         } else {
             setTimeout(() => this.initFirebase(), 100);
+        }
+    }
+
+    // Session persistence methods
+    saveSession() {
+        if (this.currentRoom && this.currentPlayer) {
+            const session = {
+                roomCode: this.currentRoom,
+                playerId: this.currentPlayer.id,
+                playerName: this.currentPlayer.name,
+                isHost: this.isHost
+            };
+            sessionStorage.setItem('partyGamesSession', JSON.stringify(session));
+            console.log('Session saved:', session);
+        }
+    }
+
+    clearSession() {
+        sessionStorage.removeItem('partyGamesSession');
+        console.log('Session cleared');
+    }
+
+    getSession() {
+        const data = sessionStorage.getItem('partyGamesSession');
+        return data ? JSON.parse(data) : null;
+    }
+
+    async restoreSession() {
+        const session = this.getSession();
+        if (!session || !this.db) {
+            return false;
+        }
+
+        console.log('Attempting to restore session:', session);
+        this.isReconnecting = true;
+
+        try {
+            // Check if room still exists
+            const snapshot = await this.db.ref('rooms/' + session.roomCode).once('value');
+
+            if (!snapshot.exists()) {
+                console.log('Room no longer exists');
+                this.clearSession();
+                this.isReconnecting = false;
+                return false;
+            }
+
+            const roomData = snapshot.val();
+
+            // Check if player is still in room
+            const playerExists = roomData.players.some(p => p.id === session.playerId);
+
+            if (!playerExists) {
+                console.log('Player no longer in room');
+                this.clearSession();
+                this.isReconnecting = false;
+                return false;
+            }
+
+            // Restore session
+            this.currentRoom = session.roomCode;
+            this.currentPlayer = {
+                id: session.playerId,
+                name: session.playerName
+            };
+            // Re-check host status from current room data
+            this.isHost = roomData.host === session.playerId;
+
+            this.startListening();
+            console.log('Session restored successfully');
+            this.isReconnecting = false;
+            return true;
+        } catch (error) {
+            console.error('Error restoring session:', error);
+            this.clearSession();
+            this.isReconnecting = false;
+            return false;
         }
     }
 
@@ -41,6 +119,13 @@ class GameState {
             }
             this.db = firebase.database();
             console.log('Firebase initialized successfully');
+
+            // Try to restore session after Firebase is ready
+            this.restoreSession().then(restored => {
+                if (restored && window.handleSessionRestore) {
+                    window.handleSessionRestore();
+                }
+            });
         } catch (error) {
             console.error('Error initializing Firebase:', error);
             alert('Failed to initialize Firebase: ' + error.message);
@@ -61,7 +146,7 @@ class GameState {
     async createRoom(hostName) {
         console.log('Creating room for:', hostName);
         console.log('Database initialized:', !!this.db);
-        
+
         if (!this.db) {
             alert('Connection error. Firebase is not initialized. Please refresh the page and try again.');
             return null;
@@ -69,10 +154,10 @@ class GameState {
 
         const roomCode = this.generateRoomCode();
         const playerId = this.generatePlayerId();
-        
+
         console.log('Generated room code:', roomCode);
         console.log('Generated player ID:', playerId);
-        
+
         const roomData = {
             code: roomCode,
             host: playerId,
@@ -90,15 +175,16 @@ class GameState {
             console.log('Attempting to create room in Firebase...');
             await this.db.ref('rooms/' + roomCode).set(roomData);
             console.log('Room created successfully in Firebase!');
-            
+
             this.currentRoom = roomCode;
             this.currentPlayer = {
                 id: playerId,
                 name: hostName
             };
             this.isHost = true;
-            
+
             this.startListening();
+            this.saveSession();
             console.log('Started listening for updates');
             return roomCode;
         } catch (error) {
@@ -118,14 +204,14 @@ class GameState {
 
         try {
             const snapshot = await this.db.ref('rooms/' + roomCode).once('value');
-            
+
             if (!snapshot.exists()) {
                 throw new Error('Room not found');
             }
 
             const roomData = snapshot.val();
             const playerId = this.generatePlayerId();
-            
+
             // Check if player limit reached
             if (roomData.players.length >= 12) {
                 throw new Error('Room is full');
@@ -148,6 +234,7 @@ class GameState {
             this.isHost = false;
 
             this.startListening();
+            this.saveSession();
             return true;
         } catch (error) {
             console.error('Error joining room:', error);
@@ -209,6 +296,7 @@ class GameState {
             }
 
             this.stopListening();
+            this.clearSession();
             this.currentRoom = null;
             this.currentPlayer = null;
             this.isHost = false;
@@ -261,7 +349,7 @@ class GameState {
         if (!this.db || !this.currentRoom) return;
 
         this.stopListening();
-        
+
         this.roomRef = this.db.ref('rooms/' + this.currentRoom);
         this.roomRef.on('value', (snapshot) => {
             if (snapshot.exists()) {
