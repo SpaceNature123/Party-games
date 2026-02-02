@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #fff;
+        }
+        .status {
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 2px solid #666;
+        }
+        .success { background: #0f4; color: #000; border-color: #0f4; }
+        .error { background: #f04; border-color: #f04; }
+        .pending { background: #fa0; color: #000; border-color: #fa0; }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #ff6b35;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #e85a2b; }
+        pre {
+            background: #000;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+    </style>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <h1>🔥 Firebase Connection Test</h1>
+    
+    <div id="status" class="status pending">
+        Testing Firebase connection...
+    </div>
+    
+    <div>
+        <button onclick="testWrite()">Test Write</button>
+        <button onclick="testRead()">Test Read</button>
+        <button onclick="checkRules()">Check Rules</button>
+    </div>
+    
+    <h3>Console Log:</h3>
+    <pre id="log"></pre>
+
+    <script>
+        let db;
+        let logText = '';
+        
+        function log(message) {
+            console.log(message);
+            logText += message + '\n';
+            document.getElementById('log').textContent = logText;
+        }
+
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDNDnvTZX0_eWZW0enSabKZ2NOAcucFnes",
+            authDomain: "my-party-games.firebaseapp.com",
+            databaseURL: "https://my-party-games-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "my-party-games",
+            storageBucket: "my-party-games.firebasestorage.app",
+            messagingSenderId: "315873122377",
+            appId: "1:315873122377:web:9c3a4ffe72a234b79b4798"
+        };
+
+        function setStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status ' + type;
+        }
+
+        try {
+            log('Initializing Firebase...');
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            log('✓ Firebase initialized successfully!');
+            setStatus('✓ Firebase SDK loaded and initialized!', 'success');
+        } catch (error) {
+            log('✗ Error initializing Firebase: ' + error.message);
+            setStatus('✗ Firebase initialization failed: ' + error.message, 'error');
+        }
+
+        async function testWrite() {
+            log('\n--- Testing WRITE permission ---');
+            try {
+                const testRef = db.ref('test/connection');
+                await testRef.set({
+                    message: 'Hello from test!',
+                    timestamp: Date.now()
+                });
+                log('✓ WRITE successful!');
+                setStatus('✓ Write test passed! Firebase is working correctly.', 'success');
+            } catch (error) {
+                log('✗ WRITE failed: ' + error.message);
+                log('Error code: ' + error.code);
+                setStatus('✗ Write test failed: ' + error.message, 'error');
+                
+                if (error.code === 'PERMISSION_DENIED') {
+                    log('\n⚠️  PERMISSION DENIED - You need to update your database rules!');
+                    log('Go to Firebase Console > Realtime Database > Rules');
+                    log('See the rules in FIREBASE_SETUP.md');
+                }
+            }
+        }
+
+        async function testRead() {
+            log('\n--- Testing READ permission ---');
+            try {
+                const testRef = db.ref('test/connection');
+                const snapshot = await testRef.once('value');
+                const data = snapshot.val();
+                log('✓ READ successful!');
+                log('Data: ' + JSON.stringify(data, null, 2));
+                setStatus('✓ Read test passed!', 'success');
+            } catch (error) {
+                log('✗ READ failed: ' + error.message);
+                setStatus('✗ Read test failed: ' + error.message, 'error');
+            }
+        }
+
+        async function checkRules() {
+            log('\n--- Checking Database Rules ---');
+            log('Attempting to access database...');
+            
+            try {
+                // Try to read the rules (this will fail, but we can check the error)
+                const testRef = db.ref('.settings/rules');
+                await testRef.once('value');
+                log('Rules appear to be accessible');
+            } catch (error) {
+                log('Cannot read rules directly (this is normal)');
+            }
+            
+            log('\nMake sure your rules look like this:');
+            log(JSON.stringify({
+                "rules": {
+                    "rooms": {
+                        "$roomCode": {
+                            ".read": true,
+                            ".write": true
+                        }
+                    },
+                    "actions": {
+                        "$roomCode": {
+                            ".read": true,
+                            ".write": true
+                        }
+                    },
+                    "test": {
+                        ".read": true,
+                        ".write": true
+                    }
+                }
+            }, null, 2));
+        }
+
+        // Auto-run connection test
+        window.addEventListener('load', () => {
+            setTimeout(testWrite, 1000);
+        });
+    </script>
+</body>
+</html>
