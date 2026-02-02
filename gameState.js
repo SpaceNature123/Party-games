@@ -350,11 +350,21 @@ class GameState {
 
         this.stopListening();
 
+        // Listen for room data changes
         this.roomRef = this.db.ref('rooms/' + this.currentRoom);
         this.roomRef.on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const roomData = snapshot.val();
                 this.onRoomUpdate(roomData);
+            }
+        });
+
+        // Listen for actions changes (player submissions, votes, etc.)
+        this.actionsRef = this.db.ref('actions/' + this.currentRoom);
+        this.actionsRef.on('value', async (snapshot) => {
+            // When actions change, trigger a game update
+            if (window.handleActionsUpdate) {
+                window.handleActionsUpdate();
             }
         });
     }
@@ -364,6 +374,10 @@ class GameState {
         if (this.roomRef) {
             this.roomRef.off();
             this.roomRef = null;
+        }
+        if (this.actionsRef) {
+            this.actionsRef.off();
+            this.actionsRef = null;
         }
     }
 

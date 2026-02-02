@@ -84,10 +84,13 @@ function initializeApp() {
     window.handleRoomUpdate = (roomData) => {
         updateLobbyDisplay(roomData);
 
-        // Check if game started
+        // Check if game started or changed
         if (roomData.currentGame && roomData.currentGame !== window.currentGameName) {
             window.currentGameName = roomData.currentGame;
             loadGame(roomData.currentGame, roomData.gameData);
+        } else if (roomData.currentGame && roomData.currentGame === window.currentGameName) {
+            // Same game, but gameData may have changed - update the active game
+            updateActiveGame(roomData.currentGame, roomData.gameData);
         } else if (!roomData.currentGame && window.currentGameName) {
             // Game ended, return to lobby
             window.currentGameName = null;
@@ -111,6 +114,17 @@ function initializeApp() {
                 // Show lobby
                 document.getElementById('lobby-screen').classList.add('active');
                 updateLobbyDisplay(roomData);
+            }
+        }
+    };
+
+    // Handle actions updates (when players submit votes, responses, etc.)
+    window.handleActionsUpdate = async () => {
+        // Re-render the active game when actions change
+        if (window.currentGameName) {
+            const roomData = await window.gameState.getRoomData();
+            if (roomData && roomData.gameData) {
+                updateActiveGame(window.currentGameName, roomData.gameData);
             }
         }
     };
@@ -244,6 +258,34 @@ function loadGame(gameName, gameData) {
             break;
         case 'quick-draw':
             window.quickDrawGame.init(container, gameData);
+            break;
+    }
+}
+
+// Update active game when gameData changes (real-time sync)
+function updateActiveGame(gameName, gameData) {
+    // Call updateDisplay on the active game to re-render with new data
+    switch (gameName) {
+        case 'guess-commenter':
+            window.guessCommenterGame.updateDisplay(gameData);
+            break;
+        case 'imposter':
+            window.imposterGame.updateDisplay(gameData);
+            break;
+        case 'two-truths':
+            window.twoTruthsGame.updateDisplay(gameData);
+            break;
+        case 'wavelength':
+            window.wavelengthGame.updateDisplay(gameData);
+            break;
+        case 'story-chain':
+            window.storyChainGame.updateDisplay(gameData);
+            break;
+        case 'alibi':
+            window.alibiGame.updateDisplay(gameData);
+            break;
+        case 'quick-draw':
+            window.quickDrawGame.updateDisplay(gameData);
             break;
     }
 }
