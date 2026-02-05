@@ -1,6 +1,7 @@
 // Main application logic
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
+    window.chatSystem.init();
 });
 
 function initializeApp() {
@@ -115,6 +116,9 @@ function initializeApp() {
                 document.getElementById('lobby-screen').classList.add('active');
                 updateLobbyDisplay(roomData);
             }
+
+            // Show chat if restoring session
+            if (window.chatSystem) window.chatSystem.showButton();
         }
     };
 
@@ -141,11 +145,17 @@ function showHome() {
     document.getElementById('player-name-input').value = '';
     document.getElementById('create-form').classList.add('hidden');
     document.getElementById('join-form').classList.add('hidden');
+
+    // Hide chat on home screen
+    if (window.chatSystem) window.chatSystem.hideButton();
 }
 
 async function showLobby() {
     document.getElementById('home-screen').classList.remove('active');
     document.getElementById('lobby-screen').classList.add('active');
+
+    // Show chat in lobby
+    if (window.chatSystem) window.chatSystem.showButton();
 
     const roomData = await window.gameState.getRoomData();
     if (roomData) {

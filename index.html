@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Party Games Hub</title>
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Righteous&family=DM+Sans:wght@400;500;700&display=swap"
+        rel="stylesheet">
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
+
 <body>
     <div id="app">
         <!-- Home Screen -->
@@ -20,7 +23,7 @@
                     <h1 class="main-title">Party Games</h1>
                     <p class="subtitle">Play together, laugh together</p>
                 </div>
-                
+
                 <div class="action-buttons">
                     <button class="btn btn-primary" id="create-room-btn">
                         <span class="btn-icon">🎮</span>
@@ -62,49 +65,56 @@
                 </div>
 
                 <div class="games-grid">
-                    <div class="game-card" data-game="guess-commenter">
+                    <div class="game-card" data-game="guess-commenter"
+                        data-tooltip="Write anonymous responses and guess who wrote what!">
                         <div class="game-icon">🎭</div>
                         <h3>Guess the Commenter</h3>
                         <p>Who said what?</p>
                         <span class="player-req">3-10 players</span>
                     </div>
 
-                    <div class="game-card" data-game="imposter">
+                    <div class="game-card" data-game="imposter"
+                        data-tooltip="Describe your secret word without giving it away to the imposter!">
                         <div class="game-icon">🕵️</div>
                         <h3>The Imposter</h3>
                         <p>Find the odd one out</p>
                         <span class="player-req">4-8 players</span>
                     </div>
 
-                    <div class="game-card" data-game="two-truths">
+                    <div class="game-card" data-game="two-truths"
+                        data-tooltip="Can you spot the lie among your friends' statements?">
                         <div class="game-icon">🤔</div>
                         <h3>Two Truths & A Lie</h3>
                         <p>Spot the fib</p>
                         <span class="player-req">3-10 players</span>
                     </div>
 
-                    <div class="game-card" data-game="wavelength">
+                    <div class="game-card" data-game="wavelength"
+                        data-tooltip="Psychic guides the team to guess the secret word with Hot/Cold clues!">
                         <div class="game-icon">🌊</div>
                         <h3>Wavelength</h3>
                         <p>On the same frequency?</p>
                         <span class="player-req">4-12 players</span>
                     </div>
 
-                    <div class="game-card" data-game="story-chain">
+                    <div class="game-card" data-game="story-chain"
+                        data-tooltip="Write a story together while hiding your secret word!">
                         <div class="game-icon">📖</div>
                         <h3>Story Chain</h3>
                         <p>Build chaos together</p>
                         <span class="player-req">3-8 players</span>
                     </div>
 
-                    <div class="game-card" data-game="alibi">
+                    <div class="game-card" data-game="alibi"
+                        data-tooltip="Partners must create a matching alibi to prove their innocence!">
                         <div class="game-icon">⚖️</div>
                         <h3>Alibi</h3>
                         <p>Tell your story</p>
                         <span class="player-req">4-8 players</span>
                     </div>
 
-                    <div class="game-card" data-game="quick-draw">
+                    <div class="game-card" data-game="quick-draw"
+                        data-tooltip="Draw a phrase, describe a drawing. Watch the message distort!">
                         <div class="game-icon">✏️</div>
                         <h3>Quick Draw Telephone</h3>
                         <p>Artistic disasters</p>
@@ -126,6 +136,8 @@
     <script src="storyChain.js"></script>
     <script src="alibi.js"></script>
     <script src="quickDraw.js"></script>
+    <script src="chat.js"></script>
     <script src="main.js"></script>
 </body>
+
 </html>

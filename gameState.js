@@ -367,6 +367,18 @@ class GameState {
                 window.handleActionsUpdate();
             }
         });
+
+        // Listen for chat messages (Moved to inside rooms for permissions)
+        this.chatRef = this.db.ref('rooms/' + this.currentRoom + '/chat');
+        this.chatRef.limitToLast(50).on('value', (snapshot) => {
+            if (window.handleChatUpdate && snapshot.exists()) {
+                const messages = [];
+                snapshot.forEach(child => {
+                    messages.push(child.val());
+                });
+                window.handleChatUpdate(messages);
+            }
+        });
     }
 
     // Stop listening
@@ -378,6 +390,10 @@ class GameState {
         if (this.actionsRef) {
             this.actionsRef.off();
             this.actionsRef = null;
+        }
+        if (this.chatRef) {
+            this.chatRef.off();
+            this.chatRef = null;
         }
     }
 
@@ -435,12 +451,46 @@ class GameState {
         }
     }
 
+    // Send chat message
+    async sendChatMessage(text) {
+        if (!this.db) {
+            console.error('Chat Error: Database not initialized');
+            return { success: false, error: 'Database not connected' };
+        }
+        if (!this.currentRoom) {
+            console.error('Chat Error: No current room');
+            return { success: false, error: 'Not in a room' };
+        }
+        if (!this.currentPlayer) {
+            console.error('Chat Error: No current player');
+            return { success: false, error: 'Player identity missing' };
+        }
+
+        try {
+            // Write to rooms/{id}/chat to inherit rooms permissions
+            const messageRef = this.db.ref('rooms/' + this.currentRoom + '/chat').push();
+            await messageRef.set({
+                id: messageRef.key,
+                playerId: this.currentPlayer.id,
+                playerName: this.currentPlayer.name,
+                text: text,
+                timestamp: Date.now()
+            });
+            return { success: true };
+        } catch (error) {
+            console.error('Error sending message:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     // Clear all actions for current game
     async clearGameActions() {
         if (!this.currentRoom || !this.isHost || !this.db) return;
 
         try {
             await this.db.ref(`actions/${this.currentRoom}`).remove();
+            // Optionally clear chat too, but mostly we want to keep it?
+            // Let's keep chat for history
         } catch (error) {
             console.error('Error clearing actions:', error);
         }

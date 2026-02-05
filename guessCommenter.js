@@ -18,7 +18,28 @@ window.guessCommenterGame = {
         this.hasSubmitted = false;
         container.innerHTML = this.getHTML();
         this.attachEventListeners();
-        this.updateDisplay(gameData);
+        if (gameData.phase === 'submit' && !gameData.instructionsShown) {
+            this.showInstructions();
+        }
+    },
+
+    showInstructions() {
+        const overlay = document.createElement('div');
+        overlay.className = 'instruction-overlay';
+        overlay.innerHTML = `
+            <div class="instruction-card">
+                <div class="instruction-icon">🎭</div>
+                <h3 class="instruction-title">Guess the Commenter</h3>
+                <div class="instruction-text">
+                    <p class="mb-1">1. Everyone answers a prompt anonymously.</p>
+                    <p class="mb-1">2. Responses are revealed one by one.</p>
+                    <p class="mb-1">3. Guess who wrote each response!</p>
+                    <p class="mt-1" style="font-size: 0.9rem; color: var(--text-dark);">Fooling others gets you points too!</p>
+                </div>
+                <button class="btn btn-primary" onclick="this.closest('.instruction-overlay').remove()">Got it!</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
     },
 
     getHTML() {
@@ -26,7 +47,10 @@ window.guessCommenterGame = {
             <div class="game-screen">
                 <div class="game-header">
                     <h2 class="game-title">🎭 Guess the Commenter</h2>
-                    <button class="btn btn-danger btn-small" id="end-game-btn">End Game</button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary btn-small" id="help-btn">?</button>
+                        <button class="btn btn-danger btn-small" id="end-game-btn">End Game</button>
+                    </div>
                 </div>
                 <div class="game-content" id="game-content">
                     <div class="loading-state">Loading...</div>
@@ -43,6 +67,10 @@ window.guessCommenterGame = {
                     await window.gameState.endGame();
                 }
             }
+        });
+
+        document.getElementById('help-btn').addEventListener('click', () => {
+            this.showInstructions();
         });
     },
 
